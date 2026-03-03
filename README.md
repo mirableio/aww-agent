@@ -12,7 +12,7 @@ uv sync
 
 ```python
 import asyncio
-from agent import Agent, Tool, AnthropicAdapter
+from agent import Agent, Tool, AnthropicAdapter, OpenAIAdapter
 
 class GetWeather(Tool):
     """Get weather for a location."""
@@ -22,7 +22,7 @@ class GetWeather(Tool):
         return f"72°F in {self.location}"
 
 agent = Agent(
-    adapter=AnthropicAdapter(),
+    adapter=AnthropicAdapter(),  # replace with OpenAIAdapter() to use OpenAI Responses API
     tools=[GetWeather],
     system_prompt="Be concise.",
 )
@@ -37,9 +37,9 @@ asyncio.run(main())
 ## Streaming
 
 ```python
-from agent import Agent, AnthropicAdapter, TextDelta, ToolCallStart, ToolCallComplete, AgentDone
+from agent import Agent, AnthropicAdapter, OpenAIAdapter, TextDelta, ToolCallStart, ToolCallComplete, AgentDone
 
-agent = Agent(adapter=AnthropicAdapter())
+agent = Agent(adapter=AnthropicAdapter())  # or OpenAIAdapter()
 
 async for event in agent.run_stream("Hello"):
     match event:
@@ -76,12 +76,15 @@ class SendEmail(Tool):
 
 Create `.env`:
 ```
-ANTHROPIC_API_KEY=sk-ant-...
+ANTHROPIC_API_KEY=...
+OPENAI_API_KEY=...
+LLM_MODEL=...
 ```
 
 Or pass directly:
 ```python
 AnthropicAdapter(api_key="sk-ant-...", model="claude-sonnet-4-5")
+# Replace with OpenAIAdapter(api_key="sk-proj-...", model="gpt-5-mini") for OpenAI.
 ```
 
 ## Agent Options
@@ -142,6 +145,7 @@ Controls: Type + Enter, ESC to stop generation, Ctrl+D to quit.
 | `Agent` | Main agent loop |
 | `Tool` | Base class for tools |
 | `AnthropicAdapter` | Claude API adapter |
+| `OpenAIAdapter` | OpenAI Responses API adapter |
 | `Message` | Conversation message |
 | `AgentResult` | Result from `run()` |
 | `run_chat()` | One-liner interactive console |

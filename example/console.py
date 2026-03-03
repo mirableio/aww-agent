@@ -1,5 +1,6 @@
 """Example console chat with demo tools."""
 
+import os
 from agent import Tool, run_chat
 
 
@@ -24,7 +25,10 @@ class Calculate(Tool):
 
 
 if __name__ == "__main__":
+    provider = os.getenv("AGENT_PROVIDER", "anthropic").strip().lower()
+    print(f"Using provider: {provider}")
     run_chat(
         tools=[GetWeather, Calculate],
         system_prompt="Be helpful and concise.",
+        provider=provider,
     )

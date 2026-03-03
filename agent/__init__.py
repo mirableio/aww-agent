@@ -1,6 +1,7 @@
 """Lightweight agent framework for production AI applications."""
 
 from .adapters.anthropic import AnthropicAdapter
+from .adapters.openai import OpenAIAdapter
 from .core.messages import Message
 from .core.events import (
     AgentEvent,
@@ -21,6 +22,7 @@ __all__ = [
     "Agent",
     "AgentResult",
     "AnthropicAdapter",
+    "OpenAIAdapter",
     "Message",
     "Tool",
     "AgentError",

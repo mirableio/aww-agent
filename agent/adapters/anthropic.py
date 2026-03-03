@@ -1,43 +1,30 @@
 import json
 from collections.abc import AsyncGenerator
-from dataclasses import dataclass
 from typing import Any
 from anthropic import AsyncAnthropic
 
 from ..config import (
-    ANTHROPIC_API_KEY, DEFAULT_MODEL, DEFAULT_MAX_RETRIES, DEFAULT_TIMEOUT, DEFAULT_MAX_TOKENS
+    ANTHROPIC_API_KEY,
+    LLM_MODEL,
+    LLM_MAX_RETRIES,
+    LLM_TIMEOUT,
+    LLM_MAX_TOKENS,
 )
 from ..core.messages import Message
 from ..core.content import TextContent, ToolCallContent, ToolResultContent, ToolCall
 from ..core.types import Role
 from ..core.events import TextDelta
-from .base import BaseAdapter, ModelResponse, TokenUsage
-
-
-@dataclass
-class StreamedToolCall:
-    """A tool call accumulated from streaming."""
-    id: str
-    name: str
-    arguments: dict[str, Any]
-
-
-@dataclass
-class StreamResult:
-    """Final result from streaming a turn."""
-    text: str
-    tool_calls: list[ToolCall]
-    usage: TokenUsage
-    stop_reason: str
+from ..exceptions import AdapterError
+from .base import BaseAdapter, ModelResponse, StreamResult, TokenUsage
 
 
 class AnthropicAdapter(BaseAdapter):
     def __init__(
         self,
-        model: str = DEFAULT_MODEL,
+        model: str | None = LLM_MODEL,
         api_key: str | None = ANTHROPIC_API_KEY,
-        max_retries: int = DEFAULT_MAX_RETRIES,
-        timeout: float = DEFAULT_TIMEOUT,
+        max_retries: int = LLM_MAX_RETRIES,
+        timeout: float = LLM_TIMEOUT,
     ):
         self.model = model
         self.api_key = api_key
@@ -56,9 +43,13 @@ class AnthropicAdapter(BaseAdapter):
         return self._client
 
     async def complete(self, messages: list[Message], *, system: str | None = None,
-                       tools: list[Any] | None = None, max_tokens: int = DEFAULT_MAX_TOKENS, **kwargs: Any) -> ModelResponse:
+                       tools: list[Any] | None = None, max_tokens: int = LLM_MAX_TOKENS, **kwargs: Any) -> ModelResponse:
+        model = kwargs.pop("model", self.model)
+        if not model:
+            raise AdapterError("Anthropic model not configured. Set LLM_MODEL or pass model=...")
+
         request_params: dict[str, Any] = {
-            "model": kwargs.pop("model", self.model),
+            "model": model,
             "max_tokens": max_tokens,
             "messages": self._convert_messages_to_anthropic(messages),
         }
@@ -71,9 +62,13 @@ class AnthropicAdapter(BaseAdapter):
         return self.convert_from_provider(response)
 
     async def stream(self, messages: list[Message], *, system: str | None = None,
-                     tools: list[Any] | None = None, max_tokens: int = DEFAULT_MAX_TOKENS, **kwargs: Any) -> AsyncGenerator[Any, None]:
+                     tools: list[Any] | None = None, max_tokens: int = LLM_MAX_TOKENS, **kwargs: Any) -> AsyncGenerator[Any, None]:
+        model = kwargs.pop("model", self.model)
+        if not model:
+            raise AdapterError("Anthropic model not configured. Set LLM_MODEL or pass model=...")
+
         request_params: dict[str, Any] = {
-            "model": kwargs.pop("model", self.model),
+            "model": model,
             "max_tokens": max_tokens,
             "messages": self._convert_messages_to_anthropic(messages),
         }
@@ -92,12 +87,16 @@ class AnthropicAdapter(BaseAdapter):
         *,
         system: str | None = None,
         tools: list[Any] | None = None,
-        max_tokens: int = DEFAULT_MAX_TOKENS,
+        max_tokens: int = LLM_MAX_TOKENS,
         **kwargs: Any,
     ) -> AsyncGenerator[TextDelta | StreamResult, None]:
         """Stream and yield parsed events. Yields TextDelta for each text chunk, then StreamResult at end."""
+        model = kwargs.pop("model", self.model)
+        if not model:
+            raise AdapterError("Anthropic model not configured. Set LLM_MODEL or pass model=...")
+
         request_params: dict[str, Any] = {
-            "model": kwargs.pop("model", self.model),
+            "model": model,
             "max_tokens": max_tokens,
             "messages": self._convert_messages_to_anthropic(messages),
         }

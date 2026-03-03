@@ -1,7 +1,7 @@
 """Tests for message abstraction."""
 import pytest
 from agent.core.messages import Message
-from agent.core.content import TextContent, ToolCallContent, ToolCall
+from agent.core.content import TextContent, ToolCall
 from agent.core.types import Role
 
 

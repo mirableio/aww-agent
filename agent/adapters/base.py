@@ -1,8 +1,10 @@
 from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator
+from dataclasses import dataclass
 from typing import Any
 from pydantic import BaseModel, Field
-from ..config import DEFAULT_MAX_TOKENS
+from ..config import LLM_MAX_TOKENS
+from ..core.content import ToolCall
 from ..core.messages import Message
 
 
@@ -25,15 +27,30 @@ class ModelResponse(BaseModel):
     model_config = {"arbitrary_types_allowed": True}
 
 
+@dataclass
+class StreamResult:
+    text: str
+    tool_calls: list[ToolCall]
+    usage: TokenUsage
+    stop_reason: str
+
+
 class BaseAdapter(ABC):
     @abstractmethod
     async def complete(self, messages: list[Message], *, system: str | None = None,
-                       tools: list[Any] | None = None, max_tokens: int = DEFAULT_MAX_TOKENS, **kwargs: Any) -> ModelResponse:
+                       tools: list[Any] | None = None, max_tokens: int = LLM_MAX_TOKENS, **kwargs: Any) -> ModelResponse:
         ...
 
     @abstractmethod
     def stream(self, messages: list[Message], *, system: str | None = None,
-               tools: list[Any] | None = None, max_tokens: int = DEFAULT_MAX_TOKENS, **kwargs: Any) -> AsyncGenerator[Any, None]:
+               tools: list[Any] | None = None, max_tokens: int = LLM_MAX_TOKENS, **kwargs: Any) -> AsyncGenerator[Any, None]:
+        ...
+
+    @abstractmethod
+    async def stream_with_events(self, messages: list[Message], *, system: str | None = None,
+                                 tools: list[Any] | None = None, max_tokens: int = LLM_MAX_TOKENS,
+                                 **kwargs: Any) -> AsyncGenerator[Any, None]:
+        """Yield TextDelta events during generation, then a final StreamResult for the turn."""
         ...
 
     @abstractmethod

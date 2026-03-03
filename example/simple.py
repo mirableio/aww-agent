@@ -1,6 +1,8 @@
 """Example usage of the agent framework."""
 import asyncio
-from agent import Agent, Tool, AnthropicAdapter
+from agent import Agent, Tool
+
+from example.adapter_factory import build_adapter
 
 
 class GetWeather(Tool):
@@ -24,8 +26,10 @@ class Calculate(Tool):
 
 
 async def main() -> None:
+    adapter = build_adapter()
+    print(f"Using: {type(adapter).__name__}")
     agent = Agent(
-        adapter=AnthropicAdapter(),
+        adapter=adapter,
         tools=[GetWeather, Calculate],
         system_prompt="You are a helpful assistant. Answer questions concisely.",
     )

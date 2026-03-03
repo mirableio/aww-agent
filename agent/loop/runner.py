@@ -1,15 +1,14 @@
 from collections.abc import AsyncGenerator
 from typing import Any, Awaitable, Callable, Type
 
-from ..config import DEFAULT_MAX_TOKENS, DEFAULT_MAX_ITERATIONS, DEFAULT_ERROR_THRESHOLD
+from ..config import LLM_MAX_TOKENS, DEFAULT_MAX_ITERATIONS, DEFAULT_ERROR_THRESHOLD
 from ..core.messages import Message
 from ..core.content import ContentBlock, TextContent, ToolCallContent
 from ..core.types import Role, StopReason
 from ..core.events import (
     AgentEvent, TextDelta, ToolCallStart, ToolCallComplete, TurnComplete, AgentDone
 )
-from ..adapters.base import BaseAdapter
-from ..adapters.anthropic import AnthropicAdapter, StreamResult
+from ..adapters.base import BaseAdapter, StreamResult
 from ..tools.base import Tool, SubmitResult
 from ..tools.executor import ToolExecutor
 
@@ -40,7 +39,7 @@ class Agent:
         tools: list[Type[Tool]] | None = None,
         *,
         system_prompt: str | None = None,
-        max_tokens: int = DEFAULT_MAX_TOKENS,
+        max_tokens: int = LLM_MAX_TOKENS,
         max_iterations: int = DEFAULT_MAX_ITERATIONS,
         error_threshold: int = DEFAULT_ERROR_THRESHOLD,
         include_done_tool: bool = False,
@@ -156,10 +155,6 @@ class Agent:
         iteration = 0
         consecutive_errors = 0
         done_tool_name = SubmitResult.tool_name()
-
-        # Check adapter supports streaming
-        if not isinstance(self.adapter, AnthropicAdapter):
-            raise NotImplementedError("Streaming only supported with AnthropicAdapter")
 
         while True:
             iteration += 1

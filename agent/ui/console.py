@@ -1,6 +1,7 @@
 """Reusable console chat UI with Rich."""
 
 import asyncio
+import os
 import sys
 import termios
 import tty
@@ -14,6 +15,7 @@ from rich.spinner import Spinner
 from rich.text import Text
 
 from ..adapters.anthropic import AnthropicAdapter
+from ..adapters.openai import OpenAIAdapter
 from ..core.events import AgentDone, TextDelta, ToolCallComplete, ToolCallStart
 from ..core.messages import Message
 from ..loop.runner import Agent
@@ -119,6 +121,7 @@ def run_chat(
     tools: list[type[Tool]] | None = None,
     system_prompt: str = "You are a helpful assistant.",
     model: str | None = None,
+    provider: str | None = None,
 ) -> None:
     """Run interactive chat with optional tools.
 
@@ -126,8 +129,16 @@ def run_chat(
         tools: List of Tool classes to make available to the agent.
         system_prompt: System prompt for the agent.
         model: Model name for the adapter. If None, uses adapter default.
+        provider: Provider name ("anthropic" or "openai"). If None, uses AGENT_PROVIDER env var (default: anthropic).
     """
-    adapter = AnthropicAdapter(model=model) if model else AnthropicAdapter()
+    provider_name = (provider or os.getenv("AGENT_PROVIDER", "anthropic")).strip().lower()
+    if provider_name == "anthropic":
+        adapter = AnthropicAdapter(model=model) if model else AnthropicAdapter()
+    elif provider_name == "openai":
+        adapter = OpenAIAdapter(model=model) if model else OpenAIAdapter()
+    else:
+        raise ValueError("provider must be 'anthropic' or 'openai'")
+
     agent = Agent(
         adapter=adapter,
         tools=tools or [],
