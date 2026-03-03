@@ -87,6 +87,10 @@ AnthropicAdapter(api_key="sk-ant-...", model="claude-sonnet-4-5")
 # Replace with OpenAIAdapter(api_key="sk-proj-...", model="gpt-5-mini") for OpenAI.
 ```
 
+Anthropic prompt caching is enabled by default. Disable it with `AnthropicAdapter(prompt_caching=False)`.
+
+OpenAI prompt caching is automatic.
+
 ## Agent Options
 
 ```python

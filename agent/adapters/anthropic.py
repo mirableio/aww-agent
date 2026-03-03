@@ -25,11 +25,13 @@ class AnthropicAdapter(BaseAdapter):
         api_key: str | None = ANTHROPIC_API_KEY,
         max_retries: int = LLM_MAX_RETRIES,
         timeout: float = LLM_TIMEOUT,
+        prompt_caching: bool = True,
     ):
         self.model = model
         self.api_key = api_key
         self.max_retries = max_retries
         self.timeout = timeout
+        self.prompt_caching = prompt_caching
         self._client: AsyncAnthropic | None = None
 
     @property
@@ -57,6 +59,7 @@ class AnthropicAdapter(BaseAdapter):
             request_params["system"] = system
         if tools:
             request_params["tools"] = self.convert_tools_to_provider(tools)
+        self._apply_prompt_caching(kwargs)
         request_params.update(kwargs)
         response = await self.client.messages.create(**request_params)
         return self.convert_from_provider(response)
@@ -76,6 +79,7 @@ class AnthropicAdapter(BaseAdapter):
             request_params["system"] = system
         if tools:
             request_params["tools"] = self.convert_tools_to_provider(tools)
+        self._apply_prompt_caching(kwargs)
         request_params.update(kwargs)
         async with self.client.messages.stream(**request_params) as stream:
             async for chunk in stream:
@@ -104,6 +108,7 @@ class AnthropicAdapter(BaseAdapter):
             request_params["system"] = system
         if tools:
             request_params["tools"] = self.convert_tools_to_provider(tools)
+        self._apply_prompt_caching(kwargs)
         request_params.update(kwargs)
 
         text_content = ""
@@ -255,3 +260,8 @@ class AnthropicAdapter(BaseAdapter):
             elif isinstance(block, ToolCallContent):
                 result.append({"type": "tool_use", "id": block.tool_call.id, "name": block.tool_call.name, "input": block.tool_call.arguments})
         return result
+
+    def _apply_prompt_caching(self, kwargs: dict[str, Any]) -> None:
+        if not self.prompt_caching:
+            return
+        kwargs.setdefault("cache_control", {"type": "ephemeral"})
