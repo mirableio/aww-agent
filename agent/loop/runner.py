@@ -211,6 +211,8 @@ class Agent:
                 iteration=iteration,
                 input_tokens=stream_result.usage.input_tokens,
                 output_tokens=stream_result.usage.output_tokens,
+                cache_read_tokens=stream_result.usage.cache_read_tokens,
+                cache_creation_tokens=stream_result.usage.cache_creation_tokens,
             )
 
             # Natural completion: no tool calls

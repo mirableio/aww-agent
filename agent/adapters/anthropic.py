@@ -174,7 +174,19 @@ class AnthropicAdapter(BaseAdapter):
                             output_tokens=getattr(msg_usage, "output_tokens", 0),
                         )
 
-        # Get final usage from stream if available
+            final_msg = stream.current_message_snapshot
+            msg_usage = getattr(final_msg, "usage", None)
+            if msg_usage:
+                raw_input = getattr(msg_usage, "input_tokens", 0)
+                cache_read = getattr(msg_usage, "cache_read_input_tokens", 0) or 0
+                cache_create = getattr(msg_usage, "cache_creation_input_tokens", 0) or 0
+                usage = TokenUsage(
+                    input_tokens=raw_input + cache_read + cache_create,
+                    output_tokens=getattr(msg_usage, "output_tokens", 0),
+                    cache_read_tokens=cache_read,
+                    cache_creation_tokens=cache_create,
+                )
+
         final_usage = usage or TokenUsage(input_tokens=0, output_tokens=0)
 
         yield StreamResult(
@@ -205,11 +217,13 @@ class AnthropicAdapter(BaseAdapter):
                     tool_call=ToolCall(id=block.id, name=block.name, arguments=block.input)
                 ))
         message = Message(role=Role.ASSISTANT, content=content_blocks)
+        cache_read = getattr(response.usage, "cache_read_input_tokens", 0) or 0
+        cache_create = getattr(response.usage, "cache_creation_input_tokens", 0) or 0
         usage = TokenUsage(
-            input_tokens=response.usage.input_tokens,
+            input_tokens=response.usage.input_tokens + cache_read + cache_create,
             output_tokens=response.usage.output_tokens,
-            cache_read_tokens=getattr(response.usage, "cache_read_input_tokens", 0) or 0,
-            cache_creation_tokens=getattr(response.usage, "cache_creation_input_tokens", 0) or 0,
+            cache_read_tokens=cache_read,
+            cache_creation_tokens=cache_create,
         )
         return ModelResponse(message=message, stop_reason=response.stop_reason, usage=usage, raw_response=response)
 
